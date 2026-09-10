@@ -44,6 +44,16 @@ Summary:        %{summary}
 
 
 %build
+# xgrammar compiles its C++ core with -Werror. GCC 16 emits a false-positive
+# -Warray-bounds in cpp/compiled_grammar.cc (deep in the std::optional path of
+# LogFatalError, reached only when NDEBUG/-O2 inlines libstdc++'s basic_string),
+# which -Werror turns fatal. The redhat build flags are placed after xgrammar's
+# own flags on the compiler command line, so appending -Wno-error=array-bounds
+# to CXXFLAGS demotes just that one diagnostic back to a warning; every other
+# warning is still an error. Upstream tested against an older GCC that did not
+# raise it.
+CXXFLAGS="${CXXFLAGS} -Wno-error=array-bounds"
+export CXXFLAGS
 %pyproject_wheel
 
 
