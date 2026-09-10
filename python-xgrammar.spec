@@ -86,11 +86,11 @@ export CXXFLAGS
 #                              backends (import mlx, which exists only on macOS).
 #   * kernels.apply_token_bitmask_inplace_cuda - CUDA kernel; torch here has no
 #                              CUDA ("CUDA is not available in PyTorch").
-%pyproject_check_import \
-    -e 'xgrammar.libxgrammar_bindings' \
-    -e 'xgrammar.contrib.mlxlm' \
-    -e 'xgrammar.kernels.apply_token_bitmask_mlx' \
-    -e 'xgrammar.kernels.apply_token_bitmask_inplace_cuda'
+# All -e flags must stay on a single line: pyproject_check_import parses its
+# options with a Lua getopt over the macro's arguments, and a backslash
+# line-continuation makes it see an empty option list (the excludes are silently
+# dropped and every module is imported anyway).
+%pyproject_check_import -e xgrammar.libxgrammar_bindings -e xgrammar.contrib.mlxlm -e xgrammar.kernels.apply_token_bitmask_mlx -e xgrammar.kernels.apply_token_bitmask_inplace_cuda
 
 
 %files -n python3-xgrammar -f %{pyproject_files}
