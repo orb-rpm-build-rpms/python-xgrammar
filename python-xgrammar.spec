@@ -1,5 +1,10 @@
 Name:           python-xgrammar
-Version:        0.2.5^post1
+# Pinned to 0.2.1, vLLM's exact frozen pin (requirements/test/rocm.txt), which
+# is validated against transformers 5.16.1. 0.2.5.post1 briefly capped
+# transformers <5 (a regression not present in 0.2.1 or the later 0.2.6), which
+# clashes with the transformers 5.16.1 the rest of the stack needs. 0.2.1's only
+# transformers constraint is >=4.38.0 (the <4.50 cap is macOS test-only).
+Version:        0.2.1
 Release:        %autorelease
 # Fill in the actual package summary to submit package to Fedora
 Summary:        Efficient, Flexible and Portable Structured Generation
@@ -7,7 +12,7 @@ Summary:        Efficient, Flexible and Portable Structured Generation
 # No license information obtained, it's up to the packager to fill it in
 License:        ...
 URL:            https://xgrammar.mlc.ai/
-Source:         %{pypi_source xgrammar 0.2.5.post1}
+Source:         %{pypi_source xgrammar}
 
 BuildRequires:  python3-devel
 BuildRequires:  gcc
@@ -24,18 +29,18 @@ Summary:        %{summary}
 
 %description -n python3-xgrammar %_description
 
-# For official Fedora packages, review which extras should be actually packaged
-# See: https://docs.fedoraproject.org/en-US/packaging-guidelines/Python/#Extras
-%pyproject_extras_subpkg -n python3-xgrammar metal,test
+# No extras are packaged: "metal" is macOS-only (mlx-lm) and "test" pulls
+# huggingface-hub[cli] (an extra our huggingface-hub build does not provide) plus
+# pytest tooling that the import-only %%check does not use. xgrammar's core deps
+# (apache-tvm-ffi, torch, transformers, pydantic, triton, numpy) are enough.
 
 
 %prep
-%autosetup -p1 -n xgrammar-0.2.5.post1
+%autosetup -p1 -n xgrammar-%{version}
 
 
 %generate_buildrequires
-# Keep only those extras which you actually want to package or use during tests
-%pyproject_buildrequires -x metal,test
+%pyproject_buildrequires
 
 
 %build
