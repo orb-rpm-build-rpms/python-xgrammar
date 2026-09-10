@@ -17,18 +17,6 @@ Source:         %{pypi_source xgrammar}
 BuildRequires:  python3-devel
 BuildRequires:  gcc
 
-# xgrammar loads its compiled extension libxgrammar_bindings.so through
-# tvm_ffi.load_lib_module("xgrammar", ...), which locates the .so by reading the
-# dist-info RECORD manifest (importlib.metadata) and resolving the listed path
-# under site-packages -- there is no other discovery path for a bundled library
-# in a *consumer* package (tvm_ffi's fallback only searches its own package
-# directory). Fedora's brp-python-rpm-in-distinfo normally deletes RECORD (RPM
-# owns file tracking), which would make xgrammar unimportable at run time, not
-# just in %%check. Disable that one BRP so RECORD survives; the file is packaged
-# explicitly below. (Its side effect of rewriting INSTALLER pip->rpm is cosmetic
-# and irrelevant to a localrepo build.)
-%global __brp_python_rpm_in_distinfo %{nil}
-
 
 # Fill in the actual package description to submit package to Fedora
 %global _description %{expand:
@@ -76,12 +64,26 @@ export CXXFLAGS
 
 
 %check
+# xgrammar loads its compiled extension libxgrammar_bindings.so through
+# tvm_ffi.load_lib_module("xgrammar", ...), which locates a *consumer* package's
+# bundled library only by reading its dist-info RECORD manifest
+# (importlib.metadata) and resolving the listed path under site-packages;
+# tvm_ffi's fallback searches only its own package directory, never xgrammar's.
+# Fedora's brp-python-rpm-in-distinfo deletes RECORD (RPM owns file tracking),
+# so without it xgrammar is unimportable at run time, not just in %%check.
+# The BRP has already run by the time %%check executes, so regenerate a RECORD
+# here (path column only; tvm_ffi ignores the hash/size columns). File
+# collection for %%files happens after %%check, so this regenerated RECORD is
+# also shipped in the package (see %%files), fixing runtime imports too.
+( cd %{buildroot}%{python3_sitearch} &&
+  find xgrammar xgrammar-%{version}.dist-info -type f
+) | sed 's/$/,,/' > %{buildroot}%{python3_sitearch}/xgrammar-%{version}.dist-info/RECORD
 %pyproject_check_import
 
 
 %files -n python3-xgrammar -f %{pyproject_files}
-# RECORD is normally stripped by brp-python-rpm-in-distinfo (disabled above);
-# tvm_ffi reads it at import time to locate libxgrammar_bindings.so, so keep it.
+# RECORD is regenerated in %%check (brp-python-rpm-in-distinfo strips the
+# original); tvm_ffi reads it at import time to locate libxgrammar_bindings.so.
 %{python3_sitearch}/xgrammar-%{version}.dist-info/RECORD
 
 
