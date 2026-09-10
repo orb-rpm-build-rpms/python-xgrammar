@@ -78,7 +78,19 @@ export CXXFLAGS
 ( cd %{buildroot}%{python3_sitearch} &&
   find xgrammar xgrammar-%{version}.dist-info -type f
 ) | sed 's/$/,,/' > %{buildroot}%{python3_sitearch}/xgrammar-%{version}.dist-info/RECORD
-%pyproject_check_import
+# Exclusions (none is importable in a ROCm/Linux build; every real module is
+# still checked):
+#   * libxgrammar_bindings   - the C++ ctypes shared library, not a Python
+#                              extension module (no PyInit_ symbol).
+#   * contrib.mlxlm, kernels.apply_token_bitmask_mlx - Apple-Silicon MLX
+#                              backends (import mlx, which exists only on macOS).
+#   * kernels.apply_token_bitmask_inplace_cuda - CUDA kernel; torch here has no
+#                              CUDA ("CUDA is not available in PyTorch").
+%pyproject_check_import \
+    -e 'xgrammar.libxgrammar_bindings' \
+    -e 'xgrammar.contrib.mlxlm' \
+    -e 'xgrammar.kernels.apply_token_bitmask_mlx' \
+    -e 'xgrammar.kernels.apply_token_bitmask_inplace_cuda'
 
 
 %files -n python3-xgrammar -f %{pyproject_files}
