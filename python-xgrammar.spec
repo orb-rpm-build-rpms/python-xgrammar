@@ -17,6 +17,18 @@ Source:         %{pypi_source xgrammar}
 BuildRequires:  python3-devel
 BuildRequires:  gcc
 
+# xgrammar loads its compiled extension libxgrammar_bindings.so through
+# tvm_ffi.load_lib_module("xgrammar", ...), which locates the .so by reading the
+# dist-info RECORD manifest (importlib.metadata) and resolving the listed path
+# under site-packages -- there is no other discovery path for a bundled library
+# in a *consumer* package (tvm_ffi's fallback only searches its own package
+# directory). Fedora's brp-python-rpm-in-distinfo normally deletes RECORD (RPM
+# owns file tracking), which would make xgrammar unimportable at run time, not
+# just in %%check. Disable that one BRP so RECORD survives; the file is packaged
+# explicitly below. (Its side effect of rewriting INSTALLER pip->rpm is cosmetic
+# and irrelevant to a localrepo build.)
+%global __brp_python_rpm_in_distinfo %{nil}
+
 
 # Fill in the actual package description to submit package to Fedora
 %global _description %{expand:
@@ -68,6 +80,9 @@ export CXXFLAGS
 
 
 %files -n python3-xgrammar -f %{pyproject_files}
+# RECORD is normally stripped by brp-python-rpm-in-distinfo (disabled above);
+# tvm_ffi reads it at import time to locate libxgrammar_bindings.so, so keep it.
+%{python3_sitearch}/xgrammar-%{version}.dist-info/RECORD
 
 
 %changelog
